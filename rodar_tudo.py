@@ -2,12 +2,12 @@
 Executa o fluxo completo do Bolsa_Insights, na ordem,
 e para no primeiro erro:
 
-coleta.py -> calculos.py -> insights.py -> relatorio.py
+coleta.py -> calculos.py -> insights.py -> relatorio.py -> enviar_whatsapp.py
 """
 import subprocess
 import sys
 
-ETAPAS = ["coleta.py", "calculos.py", "insights.py", "relatorio.py"]
+ETAPAS = ["coleta.py", "calculos.py", "insights.py", "relatorio.py", "enviar_whatsapp.py"]
 
 
 def main():
@@ -17,7 +17,7 @@ def main():
         if resultado.returncode != 0:
             sys.exit(f"\nERRO em {etapa} - fluxo interrompido.")
 
-    print("\nFluxo concluido: abra o relatorio_bolsa.xlsx.")
+    print("\nFluxo concluido.")
 
 
 if __name__ == "__main__":
