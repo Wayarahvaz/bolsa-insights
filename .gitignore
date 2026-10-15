@@ -1,0 +1,8 @@
+.venv/
+config_local.py
+__pycache__/
+*.csv
+*.xlsx
+*.png
+insights.txt
+teste_conexao.py
