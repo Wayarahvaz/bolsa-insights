@@ -21,10 +21,34 @@ import yfinance as yf
 
 from previsao_dolar import JANELA_VOL, faixa
 
-try:
-    from config_local import WHATSAPP_APIKEY, WHATSAPP_TELEFONE
-except ImportError:
-    sys.exit("ERRO: crie o config_local.py a partir do config_local_exemplo.py.")
+import os
+
+
+def carregar_destinatarios():
+    """
+    Lista de (telefone, apikey).
+    - No PC: le o config_local.py (formato novo DESTINATARIOS ou antigo, de um numero).
+    - No GitHub Actions: le o Secret WHATSAPP_DESTINATARIOS,
+      no formato "telefone:apikey;telefone:apikey".
+    """
+    try:
+        import config_local
+        return getattr(
+            config_local,
+            "DESTINATARIOS",
+            [(config_local.WHATSAPP_TELEFONE, config_local.WHATSAPP_APIKEY)],
+        )
+    except ImportError:
+        pass
+
+    segredo = os.environ.get("WHATSAPP_DESTINATARIOS", "").strip()
+    if not segredo:
+        sys.exit("ERRO: sem config_local.py e sem o Secret WHATSAPP_DESTINATARIOS.")
+    pares = [item.split(":") for item in segredo.split(";") if item.strip()]
+    return [(tel.strip(), chave.strip()) for tel, chave in pares]
+
+
+DESTINATARIOS = carregar_destinatarios()
 
 # ---------------- Configuracao ----------------
 URL_API = "https://api.callmebot.com/whatsapp.php"
@@ -123,12 +147,14 @@ def montar_mensagem():
 
 
 # ---------------- Envio ----------------
-def enviar(texto):
-    parametros = {"phone": WHATSAPP_TELEFONE, "text": texto, "apikey": WHATSAPP_APIKEY}
+def enviar(texto, telefone, apikey):
+    """Envia para um numero. Devolve True se o servico confirmou 'Message queued'."""
+    parametros = {"phone": telefone, "text": texto, "apikey": apikey}
     try:
         resposta = requests.get(URL_API, params=parametros, timeout=30)
     except requests.exceptions.RequestException as erro:
-        sys.exit(f"ERRO de conexao com o CallMeBot (rede bloqueada?): {erro}")
+        print(f"ERRO de conexao com o CallMeBot (rede bloqueada?): {erro}")
+        return False
 
     # Remove as tags HTML da resposta para conseguir ler o status
     texto_resposta = " ".join(resposta.text.replace("<", " <").split())
@@ -137,11 +163,13 @@ def enviar(texto):
     ).strip()
 
     # O status ("Message queued" ou o erro) fica no FINAL da resposta
-    print(f"Resposta do CallMeBot (HTTP {resposta.status_code}), final: ...{texto_limpo[-200:]}")
+    print(f"[{telefone}] Resposta (HTTP {resposta.status_code}), final: ...{texto_limpo[-200:]}")
 
     if resposta.status_code != 200 or "queued" not in texto_limpo.lower():
-        sys.exit("ERRO: o servico nao confirmou 'Message queued' - veja a resposta acima.")
-    print("Mensagem na fila do CallMeBot. Chega na conversa com o bot em alguns segundos.")
+        print(f"[{telefone}] ERRO: o servico nao confirmou 'Message queued'.")
+        return False
+    print(f"[{telefone}] Mensagem na fila. Chega em alguns segundos.")
+    return True
 
 
 def main():
@@ -149,7 +177,11 @@ def main():
     print("=== Mensagem ===")
     print(texto)
     print("================\n")
-    enviar(texto)
+
+    resultados = [enviar(texto, tel, chave) for tel, chave in DESTINATARIOS]
+    print(f"\nEnviado para {sum(resultados)} de {len(resultados)} numero(s).")
+    if not all(resultados):
+        sys.exit(1)
 
 
 if __name__ == "__main__":
