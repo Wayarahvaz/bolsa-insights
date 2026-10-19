@@ -59,7 +59,9 @@ MOEDAS = {"Dólar": "BRL=X", "Euro": "EURBRL=X"}  # USD/BRL e EUR/BRL no Yahoo
 EMOJI_MOEDA = {"Dólar": "💵", "Euro": "💶"}
 EMOJI_GRUPO = {"Em alta": "📈", "Inalteradas": "➖", "Em queda": "📉"}
 LIMITE_INALTERADA = 0.02   # retorno 12m entre -2% e +2% = inalterada
-MEDIA_TENDENCIA = 20       # dias da media movel usada para a direcao do dolar
+MEDIA_TENDENCIA = 20       # dias da media movel usada para a tendencia do dolar
+LIMITE_ESTAVEL = 0.005     # ate 0,5% da media de 20 dias = "estavel"
+LIMITE_LEVE = 0.02         # de 0,5% a 2% = "leve queda/alta"; acima = "queda/alta"
 FECHAMENTO = "Beijinhos 😘"
 
 
@@ -116,19 +118,31 @@ def bloco_acoes(metricas, data_ref):
     return linhas
 
 
+def descrever_tendencia(distancia):
+    """Traduz a distancia da cotacao para a media de 20 dias em palavras."""
+    if abs(distancia) < LIMITE_ESTAVEL:
+        return "estável"
+    sentido = "queda" if distancia < 0 else "alta"
+    if abs(distancia) < LIMITE_LEVE:
+        return f"em leve {sentido}"
+    return f"em {sentido}"
+
+
 def insight_dolar(serie):
     preco = serie.iloc[-1]
     media = serie.tail(MEDIA_TENDENCIA).mean()
-    direcao = "queda" if preco < media else "alta"
+    tendencia = descrever_tendencia(preco / media - 1)
 
     retornos_log = np.log(serie / serie.shift(1)).dropna()
-    vol_21d = retornos_log.tail(JANELA_VOL).std()
+    ultimos = retornos_log.tail(JANELA_VOL)
+    vol_21d = ultimos.std()
+    tipica = ultimos.abs().median()             # variacao mais comum de um dia
     minimo, maximo = faixa(preco, vol_21d, 1.0)  # ~68%
 
     return (
-        f"💡 *Insights do dia:* Com base nesses números, o Dólar está em tendência de "
-        f"{direcao.upper()} e, para {proximo_dia_util()}, a variação provável é de até "
-        f"{pct(vol_21d, False)} (entre R$ {num(minimo)} e R$ {num(maximo)})."
+        f"💡 *Insights do dia:* Nas últimas 4 semanas, o Dólar está {tendencia}. "
+        f"Para {proximo_dia_util()}, o mais comum é variar cerca de {pct(tipica, False)}, "
+        f"com faixa provável entre R$ {num(minimo)} e R$ {num(maximo)}."
     )
 
 
