@@ -62,7 +62,7 @@ LIMITE_INALTERADA = 0.02   # retorno 12m entre -2% e +2% = inalterada
 MEDIA_TENDENCIA = 20       # dias da media movel usada para a tendencia do dolar
 LIMITE_ESTAVEL = 0.005     # ate 0,5% da media de 20 dias = "estavel"
 LIMITE_LEVE = 0.02         # de 0,5% a 2% = "leve queda/alta"; acima = "queda/alta"
-FECHAMENTO = "Beijinhos 😘"
+FECHAMENTO = "🫶"
 
 
 # ---------------- Formatacao ----------------
