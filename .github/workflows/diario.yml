@@ -1,27 +1,29 @@
 # Bolsa_Insights - execucao diaria no GitHub Actions
-# Roda de segunda a sexta as 9h (Brasilia) = 12h UTC.
+# Agendado para segunda a sexta, 8h23 (Brasilia) = 11h23 UTC.
+# Minuto "quebrado" de proposito: no minuto 0 de cada hora a fila do GitHub
+# fica congestionada e a execucao pode atrasar horas (ou ser descartada).
 # Tambem pode ser disparado manualmente na aba Actions (botao "Run workflow").
 
 name: Bolsa Insights diario
 
 on:
   schedule:
-    - cron: "0 12 * * 1-5"
+    - cron: "23 11 * * 1-5"
   workflow_dispatch:
 
 jobs:
   rodar:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       TZ: America/Sao_Paulo
       WHATSAPP_DESTINATARIOS: ${{ secrets.WHATSAPP_DESTINATARIOS }}
 
     steps:
       - name: Baixar o codigo do repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Instalar Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -33,7 +35,7 @@ jobs:
 
       - name: Guardar relatorio e insights do dia
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: relatorio-${{ github.run_number }}
           path: |
