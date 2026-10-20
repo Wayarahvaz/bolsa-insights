@@ -8,6 +8,7 @@ name: Bolsa Insights diario
 
 on:
   workflow_dispatch: 
+
 jobs:
   rodar:
     runs-on: ubuntu-24.04
