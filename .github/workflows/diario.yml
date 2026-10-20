@@ -7,10 +7,7 @@
 name: Bolsa Insights diario
 
 on:
-  schedule:
-    - cron: "23 11 * * 1-5"
-  workflow_dispatch:
-
+  workflow_dispatch: 
 jobs:
   rodar:
     runs-on: ubuntu-24.04
